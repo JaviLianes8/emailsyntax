@@ -9,3 +9,6 @@ All notable changes to this project are documented here. The format follows
 ## [0.1.0]
 
 - First release.
+- `is_valid`, `normalize` and `split` for syntax-only email addresses.
+- Pure syntax, no DNS and no network: practical WHATWG/HTML5 rules, ASCII input,
+  length limits, dotless domain rejection and no leading, trailing or consecutive dots.
