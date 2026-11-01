@@ -7,7 +7,11 @@ from enum import Enum
 
 
 class FailureReason(Enum):
-    """Every reason an address can be rejected. The value is a stable machine code."""
+    """Rejection reasons with stable machine codes.
+
+    >>> FailureReason.NO_AT.value
+    'no_at'
+    """
 
     EMPTY = "empty"
     NOT_ASCII = "not_ascii"
@@ -33,17 +37,21 @@ class FailureReason(Enum):
 
     @property
     def message(self) -> str:
-        """A short, human readable explanation for this reason."""
+        """Return a short explanation without input data.
+
+        >>> FailureReason.EMPTY.message
+        'address is empty'
+        """
         return _MESSAGES[self]
 
 
 _MESSAGES: dict[FailureReason, str] = {
     FailureReason.EMPTY: "address is empty",
     FailureReason.NOT_ASCII: "address has non-ASCII characters and allow_unicode is False",
-    FailureReason.ADDRESS_TOO_LONG: "address is longer than 254 characters",
+    FailureReason.ADDRESS_TOO_LONG: "address exceeds the 254-octet limit",
     FailureReason.NO_AT: "address has no '@' separator",
     FailureReason.EMPTY_LOCAL: "local part is empty",
-    FailureReason.LOCAL_TOO_LONG: "local part is longer than 64 characters",
+    FailureReason.LOCAL_TOO_LONG: "local part exceeds the 64-octet limit",
     FailureReason.LOCAL_BAD_DOT: "local part has a leading, trailing or double dot",
     FailureReason.LOCAL_BAD_CHAR: "local part has a character not allowed in a dot-atom",
     FailureReason.QUOTED_NOT_ALLOWED: "quoted local part is not allowed (set allow_quoted=True)",
@@ -74,6 +82,11 @@ class EmailAddress:
         normalized: the canonical form (trimmed, domain lowercased or canonicalised).
         is_quoted_local: True when the local part is a quoted string.
         is_ip_literal: True when the domain is a bracketed IPv4 or IPv6 literal.
+
+    Direct construction is a value container and does not validate the fields.
+
+    >>> str(EmailAddress("User", "Example.COM", "User@example.com"))
+    'User@Example.COM'
     """
 
     local: str
@@ -92,6 +105,11 @@ class ValidationResult:
 
     When ``valid`` is True the parsed fields are filled; otherwise ``code`` and ``reason``
     explain the first rejection and the parsed fields are ``None``.
+
+    Direct construction does not validate field consistency.
+
+    >>> bool(ValidationResult("user@example.com", True))
+    True
     """
 
     address: str
@@ -112,6 +130,10 @@ class EmailSyntaxError(ValueError):
     """Raised by the raising API for a syntactically invalid address.
 
     Subclasses :class:`ValueError`, so code that catches ``ValueError`` still works.
+
+    >>> error = EmailSyntaxError("secret", FailureReason.NO_AT)
+    >>> str(error)
+    "address has no '@' separator"
     """
 
     def __init__(self, address: str, reason: FailureReason) -> None:
@@ -119,4 +141,7 @@ class EmailSyntaxError(ValueError):
         self.failure = reason
         self.code = reason.value
         self.reason = reason.message
-        super().__init__(f"{reason.message}: {address!r}")
+        super().__init__(reason.message)
+
+    def __reduce__(self) -> tuple[type[EmailSyntaxError], tuple[str, FailureReason]]:
+        return type(self), (self.address, self.failure)

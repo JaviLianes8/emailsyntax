@@ -8,9 +8,11 @@ mail.
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import sys
 from collections.abc import Sequence
+from typing import NoReturn
 
 from . import __version__
 from ._api import validate
@@ -26,9 +28,15 @@ examples:
 """
 
 
+class _Parser(argparse.ArgumentParser):
+    def error(self, message: str) -> NoReturn:
+        self.print_usage(sys.stderr)
+        self.exit(2, "emailsyntax: invalid command arguments; see --help\n")
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser used by :func:`main`."""
-    parser = argparse.ArgumentParser(
+    parser = _Parser(
         prog="emailsyntax",
         description="Validate email address syntax offline. No DNS, no network, syntax only.",
         epilog=_EXAMPLES,
@@ -77,10 +85,10 @@ def _print_human(result: ValidationResult) -> None:
     if result.valid:
         print(f"{result.address}: valid -> {result.normalized}")
     else:
-        print(f"{result.address}: invalid ({result.code}) {result.reason}")
+        print(f"invalid ({result.code}) {result.reason}")
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def _run(argv: Sequence[str] | None = None) -> int:
     """Entry point for the ``emailsyntax`` console script. Returns the process exit code."""
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -102,12 +110,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         payload: object = (
             _result_dict(results[0]) if len(results) == 1 else [_result_dict(r) for r in results]
         )
-        print(json.dumps(payload, ensure_ascii=False))
+        print(json.dumps(payload, ensure_ascii=True))
     elif not args.quiet:
         for result in results:
             _print_human(result)
 
     return 0 if all(result.valid for result in results) else 1
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Run the command, returning 1 if its output pipe closes."""
+    try:
+        result = _run(argv)
+        sys.stdout.flush()
+        return result
+    except BrokenPipeError:
+        sys.stdout = io.StringIO()
+        return 1
 
 
 if __name__ == "__main__":

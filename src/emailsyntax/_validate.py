@@ -26,12 +26,16 @@ def evaluate(
     allow_ip_literal: bool,
 ) -> tuple[FailureReason | None, _Parsed | None]:
     """Run the full syntax check. Returns (reason, None) on failure or (None, parsed)."""
+    if not isinstance(address, str):
+        raise TypeError("address must be a string")
+    if any(type(flag) is not bool for flag in (allow_unicode, allow_quoted, allow_ip_literal)):
+        raise TypeError("allow options must be bool")
     if not address:
         return FailureReason.EMPTY, None
-    if not allow_unicode and not address.isascii():
-        return FailureReason.NOT_ASCII, None
     if len(address) > MAX_ADDRESS_LENGTH:
         return FailureReason.ADDRESS_TOO_LONG, None
+    if not allow_unicode and not address.isascii():
+        return FailureReason.NOT_ASCII, None
 
     local, separator, domain = address.rpartition("@")
     if not separator:
@@ -46,6 +50,10 @@ def evaluate(
     )
     if domain_reason is not None:
         return domain_reason, None
+
+    wire_domain = domain if literal else domain.encode("idna").decode("ascii")
+    if len(local.encode("utf-8")) + 1 + len(wire_domain) > MAX_ADDRESS_LENGTH:
+        return FailureReason.ADDRESS_TOO_LONG, None
 
     is_quoted = local.startswith('"')
     parsed = _Parsed(

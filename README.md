@@ -1,130 +1,92 @@
 # emailsyntax
 
-Syntax-only email address validation and normalization, zero dependencies, no DNS or network
+[![Lianes8 Certified](https://lianes8studio.com/certified/lianes8-certified-badge.svg)](https://lianes8studio.com/certified)
+
+Validate email address syntax and normalize its domain without DNS, network access or
+runtime dependencies. A valid result says nothing about mailbox existence or delivery.
+Python 3.10 through 3.14 are supported.
 
 ## Install
 
-```
+```sh
 pip install emailsyntax
 ```
 
-## Usage
+## Quick start
 
 ```python
-from emailsyntax import is_valid, validate, validate_or_raise, normalize, split
+from emailsyntax import is_valid, normalize, split, validate, parse, EmailSyntaxError
 
-is_valid("User@Example.com")  # True
-is_valid("user@localhost")  # False (dotless domain)
-is_valid("us..er@example.com")  # False (consecutive dots)
-
-normalize("  User.Name@Example.COM ")  # "User.Name@example.com"
-
-split("user@sub.example.co.uk")  # ("user", "sub.example.co.uk")
-```
-
-### A reason on failure
-
-`validate` returns a typed `ValidationResult` that is truthy when valid and tells you why
-when it is not:
-
-```python
-result = validate("user@localhost")
-result.valid  # False
-result.code  # "domain_not_dotted"
-result.reason  # "domain must have at least two labels"
-
-ok = validate("a.b@sub.example.com")
-ok.local, ok.domain, ok.normalized  # "a.b", "sub.example.com", "a.b@sub.example.com"
-```
-
-### Validate or raise
-
-`validate_or_raise` (alias `parse`) returns a parsed `EmailAddress` or raises
-`EmailSyntaxError`, which subclasses `ValueError` and carries `.code`, `.reason` and
-`.address`:
-
-```python
-from emailsyntax import validate_or_raise, EmailSyntaxError
-
-addr = validate_or_raise("User@Example.com")
-addr.local, addr.domain, addr.normalized  # "User", "Example.com", "User@example.com"
-
+assert is_valid("User@Example.com")
+assert not is_valid("user@localhost")
+assert normalize("  User.Name@Example.COM ") == "User.Name@example.com"
+assert split("user@sub.example.com") == ("user", "sub.example.com")
+assert validate("bad").code == "no_at"
+assert parse("User@Example.COM").normalized == "User@example.com"
 try:
-    validate_or_raise("nope")
+    parse("bad")
 except EmailSyntaxError as error:
-    error.code  # "no_at"
+    assert error.code == "no_at"
 ```
 
-### Opt-in shapes: quoted, IP literals, unicode
+`validate` returns a frozen `ValidationResult`; its truth value is `valid`. Invalid results
+have a stable `code` and a short `reason`. `parse` and `validate_or_raise` return a frozen
+`EmailAddress` or raise `EmailSyntaxError`, a `ValueError`. Exception messages never include
+input; the explicit `address` attribute still holds it.
 
-Defaults are strict ASCII. The richer RFC 5321/5322 shapes are opt-in keyword flags, so
-turning them on never surprises existing callers:
+## Optional syntax
+
+Every validation function accepts these keyword-only boolean flags, all defaulting to False:
 
 ```python
-is_valid('"john doe"@example.com', allow_quoted=True)  # True
-is_valid("user@[192.168.0.1]", allow_ip_literal=True)  # True
-is_valid("user@[IPv6:2001:db8::1]", allow_ip_literal=True)  # True
-is_valid("josé@example.com", allow_unicode=True)  # True (EAI local part)
-is_valid("user@münchen.de", allow_unicode=True)  # True (IDN domain)
+assert is_valid('"john doe"@example.com', allow_quoted=True)
+assert is_valid("user@[192.168.0.1]", allow_ip_literal=True)
+assert is_valid("user@[IPv6:2001:db8::1]", allow_ip_literal=True)
+assert is_valid("josé@example.com", allow_unicode=True)
+assert is_valid("user@münchen.de", allow_unicode=True)
 ```
 
-Every function accepts `allow_unicode`, `allow_quoted` and `allow_ip_literal`.
+Defaults require an ASCII dot-atom local part and a domain with at least two labels.
+Local parts are limited to 64 UTF-8 octets; domain labels to 63 ASCII/IDNA octets;
+the address to 254 characters and 254 octets after encoding its domain with IDNA.
+These are this library's practical limits, based on
+[RFC 5321](https://www.rfc-editor.org/rfc/rfc5321.html#section-4.5.3.1).
+Comments, display names, folding whitespace, trailing domain dots and dotless domains are
+rejected. This is neither a complete RFC 5322 parser nor HTML email-input validation.
+
+Unicode mode uses Python's IDNA 2003 codec, not IDNA 2008, and accepts only printable,
+non-whitespace Unicode local characters. Normalization preserves Unicode spelling and local
+case, lowercases domain names and compresses IP literals. It does not produce punycode output
+or normalize the local part to NFC. See the guide for exact rules and limitations.
 
 ## Command line
 
-A console script ships with the package:
-
-```
-emailsyntax user@example.com            # exit 0 and a line when valid
-emailsyntax user@localhost              # exit 1 and the reason when invalid
-emailsyntax --allow-ip-literal user@[192.168.0.1]
-printf 'a@b.co\nbad\n' | emailsyntax --stdin   # one address per line
-emailsyntax --json user@example.com     # machine-readable output
-emailsyntax --version
+```sh
+emailsyntax user@example.com
+emailsyntax --json user@example.com
+emailsyntax --allow-ip-literal 'user@[192.168.0.1]'
+printf 'a@b.co\nbad\n' | emailsyntax --stdin
+python -m emailsyntax --version
 ```
 
-Valid input exits 0, invalid input exits 1, and usage problems print to stderr. Run
-`emailsyntax --help` for every flag with runnable examples.
+Exit 0 means all inputs passed, 1 means invalid or missing input, and 2 means invalid command
+arguments. `--strict` disables all opt-in flags. `--quiet` suppresses normal output;
+`--json` takes precedence and includes the original addresses. Invalid human-readable output
+omits the input. Stdin trims each line and skips empty lines; positional arguments are not
+trimmed. Use `--` before a positional address beginning with a hyphen.
 
-## What it checks
+## Why use it?
 
-This is a pure syntax check. It never looks up DNS or MX records, never contacts a mail
-server and never touches the network. A valid result means the address is well formed, not
-that a mailbox exists or can receive mail. With the default options it follows the practical
-strict shape (no quoted strings, no domain literals, ASCII only), referencing RFC 5321/5322
-behaviour rather than implementing the full obsolete grammar. The rules enforced:
+Use emailsyntax when you need an offline gate, a stable rejection code and typed parsed
+results with no runtime dependencies. Python's
+[email package](https://docs.python.org/3/library/email.html) is intended for complete mail
+messages and headers, including display names and comments.
+[email-validator](https://pypi.org/project/email-validator/) offers normalization and optional
+DNS deliverability checks (`check_deliverability=False` disables them), and depends on
+`idna` and `dnspython`. Choose it when you need those broader internationalization and
+mail-domain policies. emailsyntax deliberately has a narrower, explicit policy.
 
-- Exactly one `@` separating a non-empty local part and domain (the last `@` outside a
-  quoted string is the separator).
-- Local part up to 64 characters, made of dot-separated atoms using
-  `A-Z a-z 0-9 ! # $ % & ' * + / = ? ^ _ `` { | } ~ -`. No leading, trailing or consecutive dots.
-- Domain up to 255 characters with at least two labels: a dotless domain such as `localhost`
-  is rejected. Each label is 1 to 63 characters of letters, digits and hyphens, with no leading
-  or trailing hyphen and no empty label.
-- Whole address up to 254 characters.
-- ASCII only by default. With `allow_unicode`, internationalized domains (IDN U-labels) and
-  unicode local parts (RFC 6531 EAI) are accepted; without it, an internationalized domain
-  must be IDNA encoded to punycode (for example `xn--mnchen-3ya.de`).
-
-`normalize` lowercases the domain and trims surrounding whitespace, keeping the local-part case
-(local parts are case sensitive per the spec, even though most providers ignore it). It also
-canonicalises IP-literal domains.
-
-## Why
-
-Most email helpers do more than check syntax. `email-validator` pulls in `dnspython` and checks
-deliverability, and `pyisemail` aims at the full RFC grammar. When all you want is a fast,
-offline "does this look like an address" gate plus a canonical form, those are heavy. This is the
-small, typed, zero-dependency primitive for that: no network, no surprises, one job.
-
-See [GUIDE.md](GUIDE.md) for task-oriented recipes.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
-
-## Links
-
-- Website: https://lianes8studio.com
-- GitHub: https://github.com/JaviLianes8
-- LinkedIn: https://www.linkedin.com/in/jlianes/
+Read the [guide](https://github.com/JaviLianes8/emailsyntax/blob/main/GUIDE.md),
+[changelog](https://github.com/JaviLianes8/emailsyntax/blob/main/CHANGELOG.md) and
+[MIT license](https://github.com/JaviLianes8/emailsyntax/blob/main/LICENSE).
+Report problems at [GitHub Issues](https://github.com/JaviLianes8/emailsyntax/issues).

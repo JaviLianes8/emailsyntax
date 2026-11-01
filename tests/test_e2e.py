@@ -1,9 +1,10 @@
-"""Real end-to-end test: install the package editable into a fresh virtual environment and
+"""Real end-to-end test: install the built wheel into a fresh virtual environment and
 drive the actual ``emailsyntax`` console script through subprocess. No mocks, no stubs."""
 
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import venv
@@ -30,11 +31,46 @@ def _python_path(env_dir: Path) -> Path:
 def console_script(tmp_path_factory: pytest.TempPathFactory) -> Path:
     env_dir = tmp_path_factory.mktemp("venv")
     venv.create(env_dir, with_pip=True)
+    wheel_dir = tmp_path_factory.mktemp("wheel")
+    supplied = os.environ.get("EMAILSYNTAX_WHEEL")
+    if supplied:
+        wheel = Path(supplied)
+    else:
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "build",
+                "--wheel",
+                "--outdir",
+                str(wheel_dir),
+                str(PROJECT_ROOT),
+            ],
+            check=True,
+            timeout=120,
+            capture_output=True,
+        )
+        wheel = next(wheel_dir.glob("*.whl"))
     subprocess.run(
-        [str(_python_path(env_dir)), "-m", "pip", "install", "-e", str(PROJECT_ROOT), "--quiet"],
+        [str(_python_path(env_dir)), "-m", "pip", "install", str(wheel), "--quiet"],
         check=True,
-        timeout=600,
+        timeout=120,
     )
+    consumer = subprocess.run(
+        [
+            str(_python_path(env_dir)),
+            "-I",
+            "-c",
+            "import emailsyntax; from pathlib import Path; "
+            "assert 'site-packages' in str(Path(emailsyntax.__file__)); "
+            "assert emailsyntax.normalize(' User@Example.COM ') == 'User@example.com'",
+        ],
+        cwd=env_dir,
+        check=True,
+        capture_output=True,
+        timeout=60,
+    )
+    assert consumer.returncode == 0
     script = _script_path(env_dir)
     assert script.is_file(), f"console script was not installed at {script}"
     return script
@@ -53,7 +89,7 @@ def _run(script: Path, *args: str, stdin: str | None = None) -> subprocess.Compl
 def test_console_script_reports_version(console_script: Path) -> None:
     result = _run(console_script, "--version")
     assert result.returncode == 0
-    assert result.stdout.strip() == "emailsyntax 0.2.0"
+    assert result.stdout.strip() == "emailsyntax 1.0.0"
 
 
 def test_console_script_accepts_a_valid_address(console_script: Path) -> None:
@@ -72,7 +108,7 @@ def test_console_script_batch_from_stdin(console_script: Path) -> None:
     result = _run(console_script, "--stdin", stdin="a@b.co\nbad\n")
     assert result.returncode == 1
     assert "a@b.co: valid" in result.stdout
-    assert "bad: invalid (no_at)" in result.stdout
+    assert "invalid (no_at)" in result.stdout
 
 
 def test_console_script_json_output(console_script: Path) -> None:

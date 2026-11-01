@@ -1,0 +1,47 @@
+[
+  {
+    "name": "rfc5321.txt",
+    "url": "https://www.rfc-editor.org/rfc/rfc5321.txt",
+    "date": "2026-11-01",
+    "revision": "RFC number or URL snapshot",
+    "size": 225929,
+    "sha256": "7d560eddff1b213c17d4e1e5f95005728b2f05bc2b3947f0fcc91717c6707634",
+    "licence": "IETF Trust RFC terms"
+  },
+  {
+    "name": "rfc6531.txt",
+    "url": "https://www.rfc-editor.org/rfc/rfc6531.txt",
+    "date": "2026-11-01",
+    "revision": "RFC number or URL snapshot",
+    "size": 40977,
+    "sha256": "4f48303f7b7659d0b3149730b51a03d59799a95b4d2ca7d913533f97b9db4b40",
+    "licence": "IETF Trust BCP 78"
+  },
+  {
+    "name": "rfc5322.txt",
+    "url": "https://www.rfc-editor.org/rfc/rfc5322.txt",
+    "date": "2026-11-01",
+    "revision": "RFC number or URL snapshot",
+    "size": 122322,
+    "sha256": "cb459acca15a2aa895863eaeff6f1d5b9c4ca15578ae3e3706f757787a385969",
+    "licence": "IETF Trust RFC terms"
+  },
+  {
+    "name": "codecs.html",
+    "url": "https://docs.python.org/3.14/library/codecs.html",
+    "date": "2026-11-01",
+    "revision": "RFC number or URL snapshot",
+    "size": 181201,
+    "sha256": "2989b4be43e58e8100ca4de47ae21343f3dd7cc304784ae2264d9fab901b276f",
+    "licence": "PSF License 2"
+  },
+  {
+    "name": "email-validator.json",
+    "url": "https://pypi.org/pypi/email-validator/json",
+    "date": "2026-11-01",
+    "revision": "RFC number or URL snapshot",
+    "size": 71616,
+    "sha256": "159e51a29a35363042c7fb747a5a80945bc337b4abe0e9e154de6780620d77a8",
+    "licence": "metadata; Unlicense project"
+  }
+]

@@ -24,7 +24,7 @@ def check_local(local: str, *, allow_quoted: bool, allow_unicode: bool) -> Failu
     """Validate the local part. Returns the first failure reason, or None when valid."""
     if not local:
         return FailureReason.EMPTY_LOCAL
-    if len(local) > MAX_LOCAL_LENGTH:
+    if len(local.encode("utf-8", errors="surrogatepass")) > MAX_LOCAL_LENGTH:
         return FailureReason.LOCAL_TOO_LONG
     if local.startswith('"'):
         if not allow_quoted:
@@ -61,6 +61,8 @@ def _check_quoted(local: str, *, allow_unicode: bool) -> FailureReason | None:
         if char == "\\":
             if index + 1 >= len(inner):
                 return FailureReason.QUOTED_UNTERMINATED
+            if not " " <= inner[index + 1] <= "~":
+                return FailureReason.QUOTED_BAD_CHAR
             index += 2
             continue
         if char == '"':
@@ -118,4 +120,8 @@ def _check_unicode_label(label: str) -> FailureReason | None:
         return FailureReason.UNICODE_LABEL_INVALID
     if len(encoded) > MAX_LABEL_LENGTH:
         return FailureReason.LABEL_TOO_LONG
+    if not encoded or any(chr(char) not in _LABEL_CHARS for char in encoded):
+        return FailureReason.UNICODE_LABEL_INVALID
+    if encoded.startswith(b"-") or encoded.endswith(b"-"):
+        return FailureReason.LABEL_HYPHEN
     return None

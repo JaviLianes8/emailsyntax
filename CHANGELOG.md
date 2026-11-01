@@ -6,6 +6,32 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-01
+
+- Stabilize the ten public names, signatures, keyword defaults, result fields and failure
+  codes from 0.2.0. Ship runnable examples, typed contracts and Python 3.10 through 3.14 support.
+- Reject non-string addresses and non-bool allow options with fixed `TypeError` messages.
+  Previously some wrong types crashed with `AttributeError` or used truthiness.
+- Exception messages contain only the reason, never the address. The explicit `address`
+  attribute remains available. `EmailSyntaxError` now supports copying and pickling.
+- Quoted backslash escapes require ASCII code points 32 through 126, including Unicode mode;
+  escaped controls, surrogates and non-ASCII characters previously passed unchecked.
+- Reject IPv6 zone identifiers. Accept the `IPv6:` literal tag case-insensitively and
+  normalize it to `IPv6:`; 0.2.0 required that exact case.
+- Validate encoded Unicode domain labels as single ASCII labels, rejecting separators,
+  illegal characters and edge hyphens introduced by IDNA mapping.
+- Measure the local limit as 64 UTF-8 octets and the whole-address limit as 254 octets after
+  IDNA domain encoding, in addition to the existing 254-character input limit. Long Unicode
+  addresses that 0.2.0 accepted can now fail. Length error messages describe octets.
+- Check the whole-input character bound before the ASCII check, so oversized non-ASCII
+  input now reports `address_too_long` rather than `not_ascii`.
+- Add `python -m emailsyntax`. Invalid human-readable CLI results omit the original input;
+  JSON still explicitly includes it and now uses ASCII escapes. Argument errors use a fixed
+  message without echoing arguments. Closed output pipes exit 1 quietly.
+- Document the practical subset accurately: IDNA 2003, printable Unicode local characters,
+  dotted domains, no full RFC 5322 or HTML email-input conformance. Normalization retains
+  Unicode domain spelling and local case. Runtime dependencies remain empty.
+
 ## [0.2.0]
 
 - Structured validation: `validate` returns a typed `ValidationResult` with a stable failure
