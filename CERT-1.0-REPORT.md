@@ -15,6 +15,7 @@ Progress:
 - [x] Run final gates and prepare pull request #3 from `release/1.0.0` to `main`.
 - [x] Fix all 15 round-one QA findings and kill the six surviving mutations.
 - [x] Fix C-05 and close the E-07 mutation gap from round two.
+- [x] Close the E-08 subclass slicing contract gap from round three.
 - [ ] Independent review (item 16), merge/publication (item 17), five QA lenses (item 19).
 
 ## API and tests
@@ -224,3 +225,34 @@ including fetched-source hashes and fresh installed-wheel tests, with pytest-tim
 300 seconds. TEMP, TMP and pytest basetemp were inside scratch `fix-r2/`; see `full.log`.
 Other interpreters were not rerun in this bounded fix stage. CHANGELOG records the type-gate
 behavior change and additional CLI contract. Public names, signatures and defaults are stable.
+
+## QA lenses: round 3 fixes (2026-11-01)
+
+Reviewed head: `def1c3e167a8f1ebfebc1493dfe34774577962cb`.
+Fix commit: `16d5b2c3a9f509cef759717c437d7d1248e6008a` (`pin subclass slicing contracts`).
+E-08 is accepted; independent re-review is pending. No findings are disputed.
+
+| Finding | Change and regression contract |
+| --- | --- |
+| E-08 | Add 24 cases across all six address APIs with forged and raising `__getitem__` overrides, using valid and invalid underlying strings. Assert overrides are never called, results match the underlying value, invalid input reports `no_at`, and result/error addresses preserve the built-in string. |
+
+The existing `str.__str__` conversion is correct, so production code and behavior are
+unchanged. The new contracts pass on the reviewed implementation. CHANGELOG records the
+added coverage; public names, signatures and defaults remain stable.
+
+Replayed the reviewer's M17 in an isolated scratch copy, replacing
+`return str.__str__(address)` with `return address[:]`. All 24 new cases fail: forged
+values violate result, rejection or hook-call assertions, and raising overrides escape
+as `RuntimeError`. There are no collection or setup errors. The scratch source was
+restored after the replay; production source was never mutated. Evidence is retained in
+scratch `fix-r3/replay_m17.py`, `m17.log`, `m17.xml` and `baseline.log`.
+
+| Mutation | Caught by |
+| --- | --- |
+| Lens-e round 3 M17: copy input through an overridable slice | `test_subclass_slicing_never_overrides_underlying_input`, all 24 cases |
+
+Final gates: `ruff format --check .`, `ruff check .`, `mypy --strict src` and `pytest`
+each exit 0; `mypy --strict src tests` also passes. Full suite: 261 passed on Python 3.14.6,
+including fetched-source hashes and fresh installed-wheel CLI tests. Tests use
+pytest-timeout at 300 seconds; TEMP, TMP and pytest basetemp stay inside scratch `fix-r3/`.
+See `full.log`. Other interpreters were not rerun in this bounded fix stage.
