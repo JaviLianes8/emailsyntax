@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
 - Read string subclasses as built-in strings without invoking overridden methods. This
   prevents forged validation and arbitrary exceptions; result and error address fields
   contain the underlying string value.
+- Reject non-string addresses without reading overridable `__class__` properties, so
+  hostile or spoofed types receive the fixed `TypeError` across all six address APIs.
 - Exception messages contain only the reason, never the address. The explicit `address`
   attribute remains available. `EmailSyntaxError` now supports copying and pickling.
 - Quoted backslash escapes require ASCII code points 32 through 126, including Unicode mode;
@@ -41,6 +43,8 @@ All notable changes to this project are documented here. The format follows
   dotted IPv4 tails on Python 3.14.6 and potentially hexadecimal tails on other versions.
 - Extend contracts for quoted-local metadata, equality of every result field, positional
   whitespace rejection, Unicode whitespace trimming on stdin and ASCII-only JSON output.
+- Pin exact cp1252 output bytes for representable non-ASCII addresses through both
+  installed CLI entry points, retaining empty stderr and successful exit status.
 - Document the practical subset accurately: IDNA 2003, printable Unicode local characters,
   dotted domains, no full RFC 5322 or HTML email-input conformance. Normalization retains
   Unicode domain spelling and local case. Runtime dependencies remain empty.

@@ -14,6 +14,7 @@ Progress:
 - [x] Run and record at least ten deliberate mutations.
 - [x] Run final gates and prepare pull request #3 from `release/1.0.0` to `main`.
 - [x] Fix all 15 round-one QA findings and kill the six surviving mutations.
+- [x] Fix C-05 and close the E-07 mutation gap from round two.
 - [ ] Independent review (item 16), merge/publication (item 17), five QA lenses (item 19).
 
 ## API and tests
@@ -194,3 +195,32 @@ and 223 passed on Python 3.11.11, with fetched-source checks and installed-wheel
 Logs: `full.log` and `python311.log`. Tests use pytest-timeout at 300 seconds and scratch
 temporary directories. Other Python versions were not rerun in this fix stage.
 CHANGELOG records every behavior change. Public names, signatures and defaults are unchanged.
+
+## QA lenses: round 2 fixes (2026-11-01)
+
+Reviewed head: `89cb624766d93ae28bd611525a429204e2b669d7`.
+Fix commit: `fix round-two certification findings` on `release/1.0.0`.
+Both findings are accepted; independent re-review is pending. No findings are disputed.
+
+| Finding | Change and regression contract |
+| --- | --- |
+| C-05 | Check `issubclass(type(address), str)` before conversion. All six address APIs reject objects with raising or spoofed `__class__` properties using exactly `TypeError("address must be a string")`, without invoking those properties. String subclasses remain supported. |
+| E-07 | Add installed module and console-script contracts for `josé@example.com` under `cp1252:strict`: exact stdout bytes including `0xe9`, empty stderr and exit 0. Existing CLI behavior is correct; this closes the missing contract. |
+
+The C-05 contracts were added before the source fix: all 12 cases failed on the reviewed
+code and pass after the type-gate change. The reviewer's original P12 repro also passes.
+Targeted boundary and installed-CLI tests: 85 passed. Evidence is retained in scratch
+`fix-r2/red-api.log`, `green.log` and `p12.log`.
+
+N17 was replayed in an isolated scratch copy by replacing `.decode(encoding)` with
+`.decode("utf-8")` in `_print_human`. The new contracts detected the mutation through
+both entry points of a freshly built and installed wheel: 2 assertion failures because
+the mutant exits 1 with `UnicodeDecodeError`. No collection or setup failure counted as
+a kill. See `fix-r2/replay_n17.py` and `n17.log`. Production CLI code was not changed.
+
+Final gates: `ruff format --check .`, `ruff check .`, `mypy --strict src` and `pytest`
+each exit 0; `mypy --strict src tests` also passes. Full suite: 237 passed on Python 3.14.6,
+including fetched-source hashes and fresh installed-wheel tests, with pytest-timeout at
+300 seconds. TEMP, TMP and pytest basetemp were inside scratch `fix-r2/`; see `full.log`.
+Other interpreters were not rerun in this bounded fix stage. CHANGELOG records the type-gate
+behavior change and additional CLI contract. Public names, signatures and defaults are stable.

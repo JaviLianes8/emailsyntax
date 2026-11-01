@@ -56,6 +56,15 @@ def test_unicode_human_output_preserves_success(command: list[str], encoding: st
     assert result.stdout.replace(b"\r\n", b"\n") == expected
 
 
+def test_cp1252_human_output_preserves_representable_unicode(command: list[str]) -> None:
+    result = run(command, "--allow-unicode", "jos\u00e9@example.com", encoding="cp1252:strict")
+    assert result.returncode == 0
+    assert result.stderr == b""
+    assert result.stdout == (
+        b"jos\xe9@example.com: valid -> jos\xe9@example.com" + os.linesep.encode("ascii")
+    )
+
+
 @pytest.mark.parametrize("address", [" a@b.co", "a@b.co ", "\ta@b.co\t", "\u2003a@b.co\u2003"])
 def test_positional_whitespace_is_rejected_and_preserved(command: list[str], address: str) -> None:
     result = run(command, "--json", address)

@@ -9,6 +9,24 @@ import emailsyntax as e
 APIS = ["validate", "is_valid", "parse", "validate_or_raise", "split", "normalize"]
 
 
+@pytest.mark.parametrize("name", APIS)
+@pytest.mark.parametrize("spoof", [False, True], ids=["raising-class", "spoofed-class"])
+def test_wrong_type_never_reads_class_property(name: str, spoof: bool) -> None:
+    accesses: list[str] = []
+
+    class HostileAddress:
+        @property  # type: ignore[misc]
+        def __class__(self) -> type[object]:  # type: ignore[override]
+            accesses.append("__class__")
+            if spoof:
+                return str
+            raise RuntimeError("private-token")
+
+    with pytest.raises(TypeError, match=r"^address must be a string$"):
+        getattr(e, name)(HostileAddress())
+    assert accesses == []
+
+
 class ForgedString(str):
     def rpartition(self, sep: str) -> tuple[str, str, str]:
         return "a", "@", "b.co"

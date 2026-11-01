@@ -19,7 +19,7 @@ class _Parsed:
 
 
 def as_string(address: str) -> str:
-    if not isinstance(address, str):
+    if not issubclass(type(address), str):
         raise TypeError("address must be a string")
     # Bypass subclass overrides, including __str__, before inspecting any input.
     return str.__str__(address)
