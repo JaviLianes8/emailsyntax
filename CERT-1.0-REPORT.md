@@ -294,7 +294,7 @@ pytest-timeout at 300 seconds; TEMP, TMP, TMPDIR and pytest basetemp stay inside
 ## QA lenses: round 5 fixes (2026-11-01)
 
 Reviewed head: `f0f55043c41025d01594ec055d820eb7c13ffd36`.
-Fix commit: `pin remaining subclass conversion contracts` (this round's test commit).
+Fix commit: `10b8b11a9e6b5cbd225221f126b8cdf9dc843072` (`pin remaining subclass conversion contracts`).
 All five findings are accepted; independent re-review is pending. No findings are disputed.
 
 | Finding | Change and regression contract |
