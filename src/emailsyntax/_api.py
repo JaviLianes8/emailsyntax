@@ -9,7 +9,7 @@ domain literals). The richer RFC 5321/5322 shapes are opt-in through the keyword
 from __future__ import annotations
 
 from ._result import EmailAddress, ValidationResult
-from ._validate import require_valid, to_result
+from ._validate import as_string, require_valid, to_result
 
 
 def is_valid(
@@ -149,8 +149,7 @@ def normalize(
     >>> normalize("  User@Example.COM ")
     'User@example.com'
     """
-    if not isinstance(address, str):
-        raise TypeError("address must be a string")
+    address = as_string(address)
     parsed = require_valid(
         address.strip(),
         allow_unicode=allow_unicode,

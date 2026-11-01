@@ -14,6 +14,8 @@ All six functions accept `address: str` and keyword-only `allow_unicode=False`,
 `allow_quoted=False`, `allow_ip_literal=False`. Wrong address types or non-bool options raise
 `TypeError`, even on empty input. Only `normalize` strips surrounding Unicode whitespace.
 The other functions preserve and validate input exactly as supplied.
+String subclasses are accepted using their underlying built-in string value; overridden
+methods are not called. Returned address fields and syntax-error addresses use that value.
 
 ```python
 from emailsyntax import validate, parse, normalize, FailureReason
@@ -59,19 +61,26 @@ characters are allowed; surrogates, controls and Unicode whitespace are not.
 The whole input is limited to 254 characters, then to 254 octets with the local part encoded
 in UTF-8 and the domain encoded in IDNA (literal domains stay ASCII). The first limit bounds
 work before Unicode conversion. IDNA expansion can make an otherwise short address too long.
+Both limits also apply to the normalized form. Lowercase expansion that exceeds either
+limit is rejected with `address_too_long` before a successful result is returned.
 The historical `domain_too_long` enum member remains for compatibility but cannot be returned
 through validation: the tighter whole-address limit rejects such input first.
 
 With `allow_ip_literal=True`, bracketed four-octet IPv4 and IPv6 with a case-insensitive
 `IPv6:` tag are accepted. IPv4 leading zeroes, IPv6 zone identifiers and arbitrary literal
-tags are rejected. IPv6 output uses `IPv6:` followed by compressed lowercase hexadecimal;
-embedded IPv4 is also normalized to hexadecimal by Python's `ipaddress` module.
+tags are rejected. IPv6 output uses `IPv6:` followed by Python's `ipaddress` compressed
+format, normally lowercase hexadecimal. IPv4-mapped IPv6 can use a dotted IPv4 tail
+(including on Python 3.14.6) instead of hexadecimal. Normalization
+follows the running interpreter's formatting and is not byte-for-byte stable across versions.
 
 ```python
 parsed = parse('"A@B"@[ipv6:2001:DB8::1]', allow_quoted=True, allow_ip_literal=True)
 assert parsed.is_quoted_local and parsed.is_ip_literal
 assert parsed.normalized == '"A@B"@[IPv6:2001:db8::1]'
 assert normalize(" User@MÜNCHEN.DE ", allow_unicode=True) == "User@münchen.de"
+mapped = normalize("a@[IPv6:::ffff:192.0.2.1]", allow_ip_literal=True)
+assert mapped == normalize("a@[IPv6:::ffff:c000:201]", allow_ip_literal=True)
+assert mapped in ("a@[IPv6:::ffff:192.0.2.1]", "a@[IPv6:::ffff:c000:201]")
 ```
 
 Normalization does not unquote local parts, fold their case, emit punycode or perform NFC.
@@ -90,6 +99,7 @@ Validation checks types, empty input, character length, ASCII policy, separator,
 syntax, domain syntax, then encoded address length, in that order. For a malformed address
 with several problems, only the first failure is reported. The last `@` separates the parts;
 an earlier `@` is valid only inside a properly quoted local part.
+Normalized character and encoded address limits are checked after the original limits.
 
 ```python
 from emailsyntax import EmailSyntaxError
@@ -114,6 +124,9 @@ except EmailSyntaxError as error:
 `--json` returns one object for one address and an array for multiple addresses; fields match
 `ValidationResult`. JSON uses ASCII escapes for portable Unicode output. Stdin consumes one
 trimmed address per nonempty line; the batch is held in memory. A closed output pipe returns 1.
+Malformed stdin bytes return 1 with a fixed, input-free diagnostic on stderr and no results.
+Human-readable output escapes characters unsupported by stdout's encoding using backslash
+escapes; valid Unicode input still exits 0. Positional arguments are never trimmed.
 The CLI is intended for bounded batches, not an unbounded stream service.
 
 From PyPI 0.2.0, public names, signatures, field defaults and failure codes remain available.

@@ -83,7 +83,9 @@ def _result_dict(result: ValidationResult) -> dict[str, object]:
 
 def _print_human(result: ValidationResult) -> None:
     if result.valid:
-        print(f"{result.address}: valid -> {result.normalized}")
+        text = f"{result.address}: valid -> {result.normalized}"
+        encoding = sys.stdout.encoding or "utf-8"
+        print(text.encode(encoding, errors="backslashreplace").decode(encoding))
     else:
         print(f"invalid ({result.code}) {result.reason}")
 
@@ -92,7 +94,11 @@ def _run(argv: Sequence[str] | None = None) -> int:
     """Entry point for the ``emailsyntax`` console script. Returns the process exit code."""
     parser = build_parser()
     args = parser.parse_args(argv)
-    addresses = _collect(args)
+    try:
+        addresses = _collect(args)
+    except UnicodeDecodeError:
+        print("error: stdin cannot be decoded with its configured encoding", file=sys.stderr)
+        return 1
     if not addresses:
         print("error: no address given; pass one or use --stdin", file=sys.stderr)
         return 1

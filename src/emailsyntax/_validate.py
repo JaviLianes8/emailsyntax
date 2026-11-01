@@ -18,6 +18,13 @@ class _Parsed:
     is_ip_literal: bool
 
 
+def as_string(address: str) -> str:
+    if not isinstance(address, str):
+        raise TypeError("address must be a string")
+    # Bypass subclass overrides, including __str__, before inspecting any input.
+    return str.__str__(address)
+
+
 def evaluate(
     address: str,
     *,
@@ -26,8 +33,6 @@ def evaluate(
     allow_ip_literal: bool,
 ) -> tuple[FailureReason | None, _Parsed | None]:
     """Run the full syntax check. Returns (reason, None) on failure or (None, parsed)."""
-    if not isinstance(address, str):
-        raise TypeError("address must be a string")
     if any(type(flag) is not bool for flag in (allow_unicode, allow_quoted, allow_ip_literal)):
         raise TypeError("allow options must be bool")
     if not address:
@@ -55,11 +60,20 @@ def evaluate(
     if len(local.encode("utf-8")) + 1 + len(wire_domain) > MAX_ADDRESS_LENGTH:
         return FailureReason.ADDRESS_TOO_LONG, None
 
+    normalized = f"{local}@{normalized_domain}"
+    if len(normalized) > MAX_ADDRESS_LENGTH:
+        return FailureReason.ADDRESS_TOO_LONG, None
+    normalized_wire_domain = (
+        normalized_domain if literal else normalized_domain.encode("idna").decode("ascii")
+    )
+    if len(local.encode("utf-8")) + 1 + len(normalized_wire_domain) > MAX_ADDRESS_LENGTH:
+        return FailureReason.ADDRESS_TOO_LONG, None
+
     is_quoted = local.startswith('"')
     parsed = _Parsed(
         local=local,
         domain=domain,
-        normalized=f"{local}@{normalized_domain}",
+        normalized=normalized,
         is_quoted_local=is_quoted,
         is_ip_literal=literal,
     )
@@ -92,6 +106,7 @@ def to_result(
     allow_ip_literal: bool,
 ) -> ValidationResult:
     """Turn a raw address into a :class:`ValidationResult`."""
+    address = as_string(address)
     reason, parsed = evaluate(
         address,
         allow_unicode=allow_unicode,
@@ -122,6 +137,7 @@ def require_valid(
     allow_ip_literal: bool,
 ) -> _Parsed:
     """Return the parsed address or raise :class:`EmailSyntaxError`."""
+    address = as_string(address)
     reason, parsed = evaluate(
         address,
         allow_unicode=allow_unicode,
