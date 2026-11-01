@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The format follows
 
 - Stabilize the ten public names, signatures, keyword defaults, result fields and failure
   codes from 0.2.0. Ship runnable examples, typed contracts and Python 3.10 through 3.14 support.
+- Remove the accidental `annotations` module attribute; `__all__` remains unchanged.
 - Reject non-string addresses and non-bool allow options with fixed `TypeError` messages.
   Previously some wrong types crashed with `AttributeError` or used truthiness.
 - Exception messages contain only the reason, never the address. The explicit `address`

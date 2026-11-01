@@ -34,6 +34,7 @@ PUBLIC_API: list[str] = [
 
 def test_all_lists_exactly_the_public_api() -> None:
     assert sorted(emailsyntax.__all__) == sorted(PUBLIC_API)
+    assert {name for name in vars(emailsyntax) if not name.startswith("_")} == set(PUBLIC_API)
 
 
 def test_every_exported_name_resolves() -> None:

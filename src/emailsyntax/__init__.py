@@ -21,6 +21,8 @@ from ._api import (
 )
 from ._result import EmailAddress, EmailSyntaxError, FailureReason, ValidationResult
 
+del annotations
+
 __all__ = [
     "EmailAddress",
     "EmailSyntaxError",

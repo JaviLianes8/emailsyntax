@@ -45,6 +45,7 @@ packages = ["src/emailsyntax"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/tests", "/sources/MANIFEST.json", "/scripts/fetch_sources.py", "/README.md", "/GUIDE.md", "/CHANGELOG.md", "/LICENSE", "/pyproject.toml"]
+exclude = ["**/__pycache__", "**/*.pyc"]
 
 [tool.ruff]
 line-length = 100

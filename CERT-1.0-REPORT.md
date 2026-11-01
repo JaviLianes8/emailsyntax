@@ -9,9 +9,9 @@ Progress:
 - [x] Add runnable examples, strict typing, contracts and seeded reference checks.
 - [x] Update README, GUIDE, dated CHANGELOG and 1.0.0 package metadata.
 - [x] Build and exercise a wheel in a fresh environment, including its CLI.
-- [ ] Install PyPI 0.2.0 and verify the upgrade in place.
-- [ ] Inspect distributions and run every installed supported interpreter.
-- [ ] Run and record at least ten deliberate mutations.
+- [x] Install PyPI 0.2.0 and verify the upgrade in place.
+- [x] Inspect distributions and run every installed supported interpreter.
+- [x] Run and record at least ten deliberate mutations.
 - [ ] Run final gates and prepare the pull request.
 - [ ] Independent review (item 16), merge/publication (item 17), five QA lenses (item 19).
 
@@ -24,7 +24,7 @@ through public validation because the whole-address bound is tighter.
 
 Baseline format, lint and strict typing passed; 78 non-e2e tests passed. After the changes,
 137 tests pass with the fetched sources, including wheel installation, CLI subprocesses,
-10 public docstring examples, README/GUIDE examples, 10,000 grammar cases, 1,000 generated
+examples for all ten public names, README/GUIDE examples, 10,000 grammar cases, 1,000 generated
 valid addresses against `email.headerregistry.Address`, 1,000 IP reference cases and 5,000
 Unicode fuzz cases. Tests use a 300-second per-test timeout.
 
@@ -43,3 +43,111 @@ run as independent reference implementations on the documented overlapping synta
 
 Unicode mode deliberately retains Python's IDNA 2003 compatibility policy. It does not
 claim full IDNA 2008, SMTPUTF8, HTML input or RFC 5322 grammar conformance.
+
+
+## Preparation scorecard
+
+| Item | Result and evidence |
+| --- | --- |
+| 1 | PASS: names, signatures, defaults and result fields pinned; behavior differences in CHANGELOG |
+| 2 | PASS: exact `__all__` and no extra non-private package attributes |
+| 3 | PASS: public doctests plus executable README/GUIDE examples |
+| 4 | PASS: `mypy --strict src tests`; typed external wheel consumer; shipped `py.typed` |
+| 5 | PASS: fixed input-free messages, typed syntax errors and wrong-type errors |
+| 6 | PASS: 137 contracts, examples, reference checks and wheel/CLI tests |
+| 7 | PASS: live-fetched specifications with manifest, derived grammar tests and running references |
+| 8 | PASS: wheel in fresh venv, CLI subprocesses, sdist install, actual PyPI upgrade |
+| 9 | PASS: fixed seeds, random Unicode, generated ASCII and IP cases; scaling below |
+| 10 | PASS for available interpreters: 3.11.11 and 3.14.6; unavailable versions listed below |
+| 11 | PASS: absolute README links, honest comparison, `twine check --strict` |
+| 12 | PASS: 1.0.0 section dated 2026-11-01 |
+| 13 | PASS: 1.0.0, Production/Stable, Python classifiers, MIT, URLs, no runtime dependencies |
+| 14 | PASS: contents of both archives inspected, license and typing marker included |
+| 15 | PASS: four commands run separately; final results below |
+| 16 | PENDING: independent review |
+| 17 | PENDING: pull request preparation; merge and publication reserved for maintainer |
+| 18 | PASS: 20 isolated deliberate mutations, all caught |
+| 19 | PENDING: five independent QA lenses; no prior verdicts |
+
+## Packaging, upgrade and interpreter results
+
+The built wheel contains eight Python modules, `py.typed`, metadata, entry points and LICENSE.
+The sdist contains the package, reusable tests, README/GUIDE/CHANGELOG, manifest and fetch
+script, pyproject, LICENSE, PKG-INFO and Hatchling's automatically included `.gitignore`.
+Neither archive contains fetched third-party content, scratch files, caches or process reports.
+`python -m build` built the wheel from the sdist. Both pass `twine check --strict`.
+A separate fresh environment installed the sdist, executed the typed consumer and drove the CLI.
+
+The actual PyPI 0.2.0 wheel was downloaded and installed in a fresh environment. Its Python
+modules match `main` byte for byte after newline normalization. Upgrading that environment
+in place to the local 1.0.0 wheel preserved all ten exports, six function signatures and
+ordinary/quoted parsed results. Before/after executions confirmed each category of changed
+validation: escaped controls/non-ASCII, scoped IPv6, literal-tag case, mapped IDNA separators
+and symbols, Unicode local octets, encoded address size, and oversized-input error precedence.
+Wrong-type and wrong-flag errors, input-free messages and exception pickle support were also
+checked against both installed versions. The upgraded console script reports 1.0.0.
+
+| Interpreter | Suite against installed wheel | CLI |
+| --- | --- | --- |
+| CPython 3.14.6, system installation | 137 passed | PASS |
+| CPython 3.11.11, Blender 4.5.10 bundled runtime | 137 passed | PASS |
+
+For each interpreter, the suite came from the extracted sdist, with pytest's `pythonpath`
+cleared. A separate isolated consumer asserted the import came from `site-packages`.
+The e2e fixture installed the same wheel into another fresh venv and drove its executable.
+A standalone external consumer also passed `mypy --strict` against the installed wheel.
+
+Python 3.10, 3.12, 3.13 and free-threaded Python could not be run: the launcher entries
+point at deleted installations. All thirteen non-system registered paths were checked and
+absent; the six user-local launchers also fail because their targets are missing. No new
+interpreter installation was required. Python 3.9 and below are outside `requires-python`.
+
+## Robustness and mutation results
+
+The committed suite uses seeds 20261101, 6531 and 5322. Oversized inputs are rejected before
+character scanning or IDNA conversion. A separate scaling run used 1,000, 10,000, 100,000
+and 1,000,000 characters of `@`, backslash and Unicode text: 1,000 validations took
+0.0037 to 0.0055 seconds across sizes. Ten normalizations with surrounding whitespace took
+0.00015, 0.00055, 0.00234 and 0.02958 seconds respectively, consistent with linear trimming.
+These are observations from this machine, not timing assertions in the suite.
+
+Each deliberate mutation below was applied alone in a scratch copy, bytecode disabled,
+and the contract/CLI suite was run with `-x` and a 300-second timeout. No syntax or collection
+errors count as kills. All 20 failed on a behavioral assertion; no survivor remained. The
+source tree was not mutated. The normal full suite passed before and after the round.
+
+| Id | Mutation | Caught by |
+| --- | --- | --- |
+| M01 | local boundary | `test_lengths_measure_utf8_local_and_idna_domain` |
+| M02 | address boundary | `test_lengths_measure_utf8_local_and_idna_domain` |
+| M03 | label boundary | `test_lengths_measure_utf8_local_and_idna_domain` |
+| M04 | ASCII restriction | `test_failure_contract` |
+| M05 | split first at | `test_result_objects_are_frozen_values` |
+| M06 | local case changed | `test_json_has_complete_result_fields` |
+| M07 | domain case unchanged | `test_json_has_complete_result_fields` |
+| M08 | boolean inverted | `test_strict_mode_accepts` |
+| M09 | input leaked | `test_failure_contract` |
+| M10 | wrong exception | `test_validate_or_raise_raises_typed_error` |
+| M11 | quoted escape accepts controls | `test_optional_failure_codes` |
+| M12 | zone identifier allowed | `test_optional_failure_codes` |
+| M13 | dotless domain allowed | `test_strict_mode_rejects` |
+| M14 | edge hyphen allowed | `test_strict_mode_rejects` |
+| M15 | Unicode octets ignored | `test_lengths_measure_utf8_local_and_idna_domain` |
+| M16 | IDNA output unchecked | `test_optional_failure_codes` |
+| M17 | encoded address cap ignored | `test_lengths_measure_utf8_local_and_idna_domain` |
+| M18 | normalize fails to trim | `test_split_and_normalize_still_work` |
+| M19 | CLI strict ignored | `test_flags_and_strict_override` |
+| M20 | CLI exit inverted | `test_json_has_complete_result_fields` |
+
+
+## Gates and remaining stages
+
+`ruff format --check .`, `ruff check .`, `mypy --strict src`, and `pytest` each exit 0.
+The stronger `mypy --strict src tests` also exits 0. The full suite has 137 passing tests
+when `EMAILSYNTAX_SOURCES` points to the fetched sources. Without that optional directory,
+the source-hash check skips cleanly; behavioral contracts still run.
+
+All test temporary paths and build temporary directories were explicitly placed in the
+private scratch directory. The per-test timeout is 300 seconds. At most two heavy jobs
+ran concurrently. The five QA lenses and independent reviewer have not run in this stage;
+there are no carried-forward PASS verdicts. Merge and publication remain pending.
