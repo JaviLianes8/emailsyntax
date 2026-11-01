@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import SupportsIndex
+
 import pytest
 
 import emailsyntax as e
@@ -82,6 +84,41 @@ def test_subclass_overrides_are_never_called(name: str, address: str) -> None:
         assert caught.value.address == address
         assert type(caught.value.address) is str
         assert "private-token" not in str(caught.value)
+
+
+@pytest.mark.parametrize("name", APIS)
+@pytest.mark.parametrize("raises", [False, True], ids=["forged-slice", "raising-slice"])
+@pytest.mark.parametrize("address", ["not-an-address", "User@Example.COM"])
+def test_subclass_slicing_never_overrides_underlying_input(
+    name: str, raises: bool, address: str
+) -> None:
+    accesses: list[SupportsIndex | slice] = []
+
+    class HostileSlice(str):
+        def __getitem__(self, key: SupportsIndex | slice) -> str:
+            accesses.append(key)
+            if raises:
+                raise RuntimeError("private-token")
+            return "a@b.co"
+
+    function = getattr(e, name)
+    if address == "User@Example.COM":
+        result = function(HostileSlice(address))
+        assert result == function(address)
+        if name == "validate":
+            assert type(result.address) is str and result.address == address
+    elif name == "is_valid":
+        assert function(HostileSlice(address)) is False
+    elif name == "validate":
+        result = function(HostileSlice(address))
+        assert not result and result.code == "no_at"
+        assert type(result.address) is str and result.address == address
+    else:
+        with pytest.raises(e.EmailSyntaxError) as caught:
+            function(HostileSlice(address))
+        assert caught.value.code == "no_at"
+        assert type(caught.value.address) is str and caught.value.address == address
+    assert accesses == []
 
 
 @pytest.mark.parametrize("name", APIS)

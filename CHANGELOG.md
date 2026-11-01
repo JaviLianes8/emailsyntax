@@ -45,6 +45,8 @@ All notable changes to this project are documented here. The format follows
   whitespace rejection, Unicode whitespace trimming on stdin and ASCII-only JSON output.
 - Pin exact cp1252 output bytes for representable non-ASCII addresses through both
   installed CLI entry points, retaining empty stderr and successful exit status.
+- Pin string-subclass slicing contracts across all six address APIs: forged and raising
+  overrides remain uncalled, and validation uses the underlying string. Behavior is unchanged.
 - Document the practical subset accurately: IDNA 2003, printable Unicode local characters,
   dotted domains, no full RFC 5322 or HTML email-input conformance. Normalization retains
   Unicode domain spelling and local case. Runtime dependencies remain empty.
