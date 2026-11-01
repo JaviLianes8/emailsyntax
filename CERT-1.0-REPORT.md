@@ -13,6 +13,7 @@ Progress:
 - [x] Inspect distributions and run every installed supported interpreter.
 - [x] Run and record at least ten deliberate mutations.
 - [x] Run final gates and prepare pull request #3 from `release/1.0.0` to `main`.
+- [x] Fix all 15 round-one QA findings and kill the six surviving mutations.
 - [ ] Independent review (item 16), merge/publication (item 17), five QA lenses (item 19).
 
 ## API and tests
@@ -67,7 +68,7 @@ claim full IDNA 2008, SMTPUTF8, HTML input or RFC 5322 grammar conformance.
 | 16 | PENDING: independent review |
 | 17 | PR #3 ready; merge and publication reserved for maintainer |
 | 18 | PASS: 20 isolated deliberate mutations, all caught |
-| 19 | PENDING: five independent QA lenses; no prior verdicts |
+| 19 | PENDING re-review: five round-one FAIL verdicts; all reported findings addressed below |
 
 ## Packaging, upgrade and interpreter results
 
@@ -149,9 +150,47 @@ the source-hash check skips cleanly; behavioral contracts still run.
 
 All test temporary paths and build temporary directories were explicitly placed in the
 private scratch directory. The per-test timeout is 300 seconds. At most two heavy jobs
-ran concurrently. The five QA lenses and independent reviewer have not run in this stage;
+ran concurrently. The preparation stage preceded the QA lenses recorded below;
 there are no carried-forward PASS verdicts. Merge and publication remain pending.
 
 Pull request: https://github.com/JaviLianes8/emailsyntax/pull/3.
 The final code and tests were verified at a8d2e65; the subsequent change only records this
 pull request and the completed preparation checklist.
+
+## QA lenses: round 1 fixes (2026-11-01)
+
+Reviewed head: `7cca20e9aad2c68a13045a40fc63f9121615c116`. All five lenses reported FAIL.
+Fix commit: `ded80779d209eb360f4174a066d06f49fa20ebac` (`fix round-one certification findings`).
+All 15 findings are accepted; independent re-review is pending. No findings are disputed.
+
+| Findings | Change and regression contract |
+| --- | --- |
+| A-01, B1, C-02 | Check normalized character and encoded limits before success; all six APIs reject lowercase overflow with `address_too_long`; adjacent accepted limits remain idempotent. |
+| A-02, B2 | Correct GUIDE's hexadecimal-only promise; document interpreter-dependent mapped IPv6 formatting and execute examples of both input forms. No formatting behavior changed. |
+| C-01 | Convert subclasses through `str.__str__` before overridable operations; all six APIs use the underlying string for parsing, result addresses and syntax errors. |
+| C-03 | Malformed stdin exits 1 with a fixed input-free diagnostic and no results; both entry points tested in human, JSON and quiet modes. |
+| C-04, D-01 | Escape unsupported stdout characters while retaining valid-input exit 0; both installed entry points tested with strict cp1252, ASCII and UTF-8. |
+| E-01 | Assert all quoted-local result fields through `validate` and installed CLI JSON. |
+| E-02 | Vary each `EmailAddress` field independently; assert inequality and separate set membership. |
+| E-03 | Vary each `ValidationResult` field independently; assert inequality and separate set membership. |
+| E-04 | Both installed entry points reject positional whitespace and preserve the exact JSON address. |
+| E-05 | Both installed entry points trim tabs and Unicode whitespace around nonempty stdin lines. |
+| E-06 | Assert raw JSON stdout is ASCII and contains Unicode escapes before decoding it. |
+
+Before implementation changes, contracts reproduced 36 API and 10 CLI failing cases.
+The API rerun corrected two fixture length calculations; those fixture errors are excluded.
+After fixes, the targeted tests and documentation examples passed: 88 tests.
+Evidence is retained under scratch `fix-r1/`: `red.log`, `red-corrected.log`, `green.log`.
+
+The six lens-e mutations were replayed separately in scratch copies. Each failed on an
+assertion, with no collection or setup failures: M17 quoted metadata (1 failure), M41
+normalized equality (1), M42 IP-flag equality (1), M47 positional whitespace (8), M48 stdin
+whitespace (6), M49 ASCII JSON (2). See `mutation-results.json` and `M17.log` through
+`M49.log` in that scratch directory. The production source was not mutated.
+
+Final gates: `ruff format --check .`, `ruff check .`, `mypy --strict src`, and `pytest`
+all exit 0; `mypy --strict src tests` also passes. Full suite: 223 passed on Python 3.14.6
+and 223 passed on Python 3.11.11, with fetched-source checks and installed-wheel CLI tests.
+Logs: `full.log` and `python311.log`. Tests use pytest-timeout at 300 seconds and scratch
+temporary directories. Other Python versions were not rerun in this fix stage.
+CHANGELOG records every behavior change. Public names, signatures and defaults are unchanged.
