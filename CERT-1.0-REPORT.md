@@ -261,7 +261,7 @@ See `full.log`. Other interpreters were not rerun in this bounded fix stage.
 ## QA lenses: round 4 fixes (2026-11-01)
 
 Reviewed head: `efc34c602eacdd77fb98e60689065b52d3075813`.
-Fix commit: `pin subclass conversion contracts` (the commit containing these tests).
+Fix commit: `04310cae697a26d6c0684ce7b0e194a684c0ffca` (`pin subclass conversion contracts`).
 E-09 and E-10 are accepted; independent re-review is pending. No findings are disputed.
 
 | Finding | Change and regression contract |
