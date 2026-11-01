@@ -199,7 +199,7 @@ CHANGELOG records every behavior change. Public names, signatures and defaults a
 ## QA lenses: round 2 fixes (2026-11-01)
 
 Reviewed head: `89cb624766d93ae28bd611525a429204e2b669d7`.
-Fix commit: `fix round-two certification findings` on `release/1.0.0`.
+Fix commit: `8f1a4c2407709fa47eaa8a1a4d231fb50d33a248` (`fix round-two certification findings`).
 Both findings are accepted; independent re-review is pending. No findings are disputed.
 
 | Finding | Change and regression contract |
