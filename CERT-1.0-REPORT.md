@@ -17,6 +17,7 @@ Progress:
 - [x] Fix C-05 and close the E-07 mutation gap from round two.
 - [x] Close the E-08 subclass slicing contract gap from round three.
 - [x] Close the E-09 and E-10 subclass conversion contract gaps from round four.
+- [x] Close the E-11 through E-15 subclass conversion contract gaps from round five.
 - [ ] Independent review (item 16), merge/publication (item 17), five QA lenses (item 19).
 
 ## API and tests
@@ -289,3 +290,46 @@ each exit 0; `mypy --strict src tests` also passes. Full suite: 309 passed on Py
 including fetched-source hashes and fresh installed-wheel CLI tests. Tests use
 pytest-timeout at 300 seconds; TEMP, TMP, TMPDIR and pytest basetemp stay inside scratch
 `fix-r4/`. See `full.log`. Other interpreters were not rerun in this bounded fix stage.
+
+## QA lenses: round 5 fixes (2026-11-01)
+
+Reviewed head: `f0f55043c41025d01594ec055d820eb7c13ffd36`.
+Fix commit: `pin remaining subclass conversion contracts` (this round's test commit).
+All five findings are accepted; independent re-review is pending. No findings are disputed.
+
+| Finding | Change and regression contract |
+| --- | --- |
+| E-11 | Add 24 cases for forged and raising `__mul__` overrides across all six address APIs. |
+| E-12 | Add the same 24 cases for `replace` overrides. |
+| E-13 | Add the same 24 cases for `removesuffix` overrides. |
+| E-14 | Add the same 24 cases for `ljust` overrides. |
+| E-15 | Add the same 24 cases for `rjust` overrides. |
+
+Every hook is tested with valid and invalid underlying strings. Contracts assert zero
+hook calls, results matching plain-string input, `no_at` rejection, and built-in string
+result/error addresses preserving the underlying value. These are missing contracts,
+not behavior defects in the reviewed implementation: all 120 additional cases pass with
+the existing `str.__str__` conversion. Production code, behavior and public API are unchanged.
+CHANGELOG records the added coverage.
+
+Replayed all five reported mutations separately in a scratch copy after adding the tests.
+Each fails all 24 applicable cases; the other 144 conversion cases pass. The baseline
+passes all 168 cases. No collection, setup or skipped cases count as kills. Original
+source bytes are restored after each replay; production source was never mutated.
+
+| Mutation | Caught by `test_subclass_conversion_never_overrides_underlying_input` |
+| --- | --- |
+| M01: `return address * 1` | All 24 `__mul__` cases |
+| M04: `return address.replace("", "")` | All 24 `replace` cases |
+| M05: `return address.removesuffix("")` | All 24 `removesuffix` cases |
+| M06: `return address.ljust(0)` | All 24 `ljust` cases |
+| M09: `return address.rjust(0)` | All 24 `rjust` cases |
+
+Evidence is retained in scratch `fix-r5/replay.py`, `results.json`, `baseline.log`,
+`M01.log`, `M04.log`, `M05.log`, `M06.log`, `M09.log` and corresponding XML reports.
+
+Final gates: `ruff format --check .`, `ruff check .`, `mypy --strict src` and `pytest`
+each exit 0; `mypy --strict src tests` also passes. Full suite: 429 passed on Python 3.14.6,
+including fetched-source hashes and fresh installed-wheel CLI tests. Tests use
+pytest-timeout at 300 seconds; TEMP, TMP, TMPDIR and pytest basetemp stay inside scratch
+`fix-r5/`. See `full.log`. Other interpreters were not rerun in this bounded fix stage.
