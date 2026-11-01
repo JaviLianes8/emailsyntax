@@ -12,7 +12,7 @@ Progress:
 - [x] Install PyPI 0.2.0 and verify the upgrade in place.
 - [x] Inspect distributions and run every installed supported interpreter.
 - [x] Run and record at least ten deliberate mutations.
-- [ ] Run final gates and prepare the pull request.
+- [x] Run final gates and prepare pull request #3 from `release/1.0.0` to `main`.
 - [ ] Independent review (item 16), merge/publication (item 17), five QA lenses (item 19).
 
 ## API and tests
@@ -65,7 +65,7 @@ claim full IDNA 2008, SMTPUTF8, HTML input or RFC 5322 grammar conformance.
 | 14 | PASS: contents of both archives inspected, license and typing marker included |
 | 15 | PASS: four commands run separately; final results below |
 | 16 | PENDING: independent review |
-| 17 | PENDING: pull request preparation; merge and publication reserved for maintainer |
+| 17 | PR #3 ready; merge and publication reserved for maintainer |
 | 18 | PASS: 20 isolated deliberate mutations, all caught |
 | 19 | PENDING: five independent QA lenses; no prior verdicts |
 
@@ -151,3 +151,7 @@ All test temporary paths and build temporary directories were explicitly placed 
 private scratch directory. The per-test timeout is 300 seconds. At most two heavy jobs
 ran concurrently. The five QA lenses and independent reviewer have not run in this stage;
 there are no carried-forward PASS verdicts. Merge and publication remain pending.
+
+Pull request: https://github.com/JaviLianes8/emailsyntax/pull/3.
+The final code and tests were verified at a8d2e65; the subsequent change only records this
+pull request and the completed preparation checklist.
