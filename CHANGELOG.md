@@ -47,6 +47,9 @@ All notable changes to this project are documented here. The format follows
   installed CLI entry points, retaining empty stderr and successful exit status.
 - Pin string-subclass slicing contracts across all six address APIs: forged and raising
   overrides remain uncalled, and validation uses the underlying string. Behavior is unchanged.
+- Pin concatenation and prefix-removal contracts across all six address APIs: forged and
+  raising `__add__` and `removeprefix` overrides remain uncalled for valid and invalid
+  underlying strings. Behavior is unchanged.
 - Document the practical subset accurately: IDNA 2003, printable Unicode local characters,
   dotted domains, no full RFC 5322 or HTML email-input conformance. Normalization retains
   Unicode domain spelling and local case. Runtime dependencies remain empty.

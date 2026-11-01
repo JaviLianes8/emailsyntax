@@ -16,6 +16,7 @@ Progress:
 - [x] Fix all 15 round-one QA findings and kill the six surviving mutations.
 - [x] Fix C-05 and close the E-07 mutation gap from round two.
 - [x] Close the E-08 subclass slicing contract gap from round three.
+- [x] Close the E-09 and E-10 subclass conversion contract gaps from round four.
 - [ ] Independent review (item 16), merge/publication (item 17), five QA lenses (item 19).
 
 ## API and tests
@@ -256,3 +257,35 @@ each exit 0; `mypy --strict src tests` also passes. Full suite: 261 passed on Py
 including fetched-source hashes and fresh installed-wheel CLI tests. Tests use
 pytest-timeout at 300 seconds; TEMP, TMP and pytest basetemp stay inside scratch `fix-r3/`.
 See `full.log`. Other interpreters were not rerun in this bounded fix stage.
+
+## QA lenses: round 4 fixes (2026-11-01)
+
+Reviewed head: `efc34c602eacdd77fb98e60689065b52d3075813`.
+Fix commit: `pin subclass conversion contracts` (the commit containing these tests).
+E-09 and E-10 are accepted; independent re-review is pending. No findings are disputed.
+
+| Finding | Change and regression contract |
+| --- | --- |
+| E-09 | Add 24 cases for forged and raising `__add__` overrides across all six address APIs, using valid and invalid underlying strings. Assert no override calls, results matching the underlying value, `no_at` rejection, and built-in result/error addresses. |
+| E-10 | Add the same 24 cases for forged and raising `removeprefix` overrides across all six address APIs. |
+
+These are contract gaps: the existing `str.__str__` conversion is correct. All 48 new
+cases pass on the reviewed implementation. Production code and behavior are unchanged;
+CHANGELOG records the additional coverage. Public names, signatures and defaults are stable.
+
+Replayed N05 and N10 separately in a scratch copy after adding the contracts. Each mutant
+fails all 24 applicable cases, while the other 24 cases pass. No collection or setup errors
+count as kills. Original source bytes are restored after each replay; production source
+was never mutated. Evidence is retained in scratch `fix-r4/replay.py`, `results.json`,
+`baseline.log`, `N05.log`, `N10.log` and their corresponding XML reports.
+
+| Mutation | Caught by |
+| --- | --- |
+| N05: replace `return str.__str__(address)` with `return address + ""` | `test_subclass_conversion_never_overrides_underlying_input`, all 24 `__add__` cases |
+| N10: replace `return str.__str__(address)` with `return address.removeprefix("")` | `test_subclass_conversion_never_overrides_underlying_input`, all 24 `removeprefix` cases |
+
+Final gates: `ruff format --check .`, `ruff check .`, `mypy --strict src` and `pytest`
+each exit 0; `mypy --strict src tests` also passes. Full suite: 309 passed on Python 3.14.6,
+including fetched-source hashes and fresh installed-wheel CLI tests. Tests use
+pytest-timeout at 300 seconds; TEMP, TMP, TMPDIR and pytest basetemp stay inside scratch
+`fix-r4/`. See `full.log`. Other interpreters were not rerun in this bounded fix stage.
