@@ -25,7 +25,7 @@ def parse_ip_literal(domain: str) -> str | None:
     inner = domain[1:-1]
     if not inner:
         return None
-    if inner.startswith(_IPV6_TAG):
+    if inner[: len(_IPV6_TAG)].lower() == _IPV6_TAG.lower():
         return _canonical_ipv6(inner[len(_IPV6_TAG) :])
     return _canonical_ipv4(inner)
 
@@ -42,6 +42,8 @@ def _canonical_ipv4(text: str) -> str | None:
 
 
 def _canonical_ipv6(text: str) -> str | None:
+    if "%" in text:
+        return None
     try:
         parsed = ipaddress.IPv6Address(text)
     except ValueError:

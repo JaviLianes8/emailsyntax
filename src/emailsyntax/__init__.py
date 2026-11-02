@@ -9,7 +9,7 @@ opt-in through keyword flags.
 
 from __future__ import annotations
 
-__version__ = "0.2.0"
+__version__ = "1.0.0"
 
 from ._api import (
     is_valid,
@@ -20,6 +20,8 @@ from ._api import (
     validate_or_raise,
 )
 from ._result import EmailAddress, EmailSyntaxError, FailureReason, ValidationResult
+
+del annotations
 
 __all__ = [
     "EmailAddress",
